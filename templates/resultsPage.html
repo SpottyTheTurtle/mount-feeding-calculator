@@ -1,0 +1,12 @@
+<h2>Result</h2>
+<p>Start: {{ start }}</p>
+<p>Target: {{ target }}</p>
+
+<h3>Materials required: {{ total }}</h3>
+<ul>
+    {% for item in materials %}
+        <li>{{ item.count }} {{ item.name }}</li>
+    {% endfor %}
+</ul>
+
+<br><a href="/">Go back</a>

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template
 import csv
 
 app = Flask(__name__)
@@ -23,7 +23,6 @@ def process_inputs(start, target, highest):
         if index is not None:
             for row in csvr[index + 1 : index + 1 + 8]:
                 material_names.append(row[0])
-                print(material_names)
                 
                 numeric_row = []
                 for cell in row[1:]:
@@ -91,88 +90,11 @@ def validate(start, target):
         if b < a:
             raise ValueError("target stats must not be lower than current limits")
 
-HTML_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Test App</title>
-</head>
-<body>
-    <h2>Mount Feeding Calculator</h2>
-
-    {% if error %}
-        <p style="color:red;"><strong>{{ error }}</strong></p>
-    {% endif %}
-
-    <form method="POST" action="/run-form">
-        <h3>Enter your mount's current limits</h3>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Speed"
-            value="{{ start[0] if start|length > 0 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Acceleration"
-               value="{{ start[1] if start|length > 1 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Altitude"
-               value="{{ start[2] if start|length > 2 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Energy"
-               value="{{ start[3] if start|length > 3 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Handling"
-               value="{{ start[4] if start|length > 4 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Toughness"
-               value="{{ start[5] if start|length > 5 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Boost"
-               value="{{ start[6] if start|length > 6 else '' }}"><br><br>
-        <input name="start[]" type="number" min="10" step="1" required placeholder="Training"
-               value="{{ start[7] if start|length > 7 else '' }}"><br><br>
-
-        <h3>Enter your mount's target limits</h3>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Speed"
-            value="{{ target[0] if target|length > 0 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Acceleration"
-               value="{{ target[1] if target|length > 1 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Altitude"
-               value="{{ target[2] if target|length > 2 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Energy"
-               value="{{ target[3] if target|length > 3 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Handling"
-               value="{{ target[4] if target|length > 4 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Toughness"
-               value="{{ target[5] if target|length > 5 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Boost"
-               value="{{ target[6] if target|length > 6 else '' }}"><br><br>
-        <input name="target[]" type="number" min="1" step="1" required placeholder="Training"
-               value="{{ target[7] if target|length > 7 else '' }}"><br><br>
-
-        <h3>Enter your highest trained stat. This will determine what level of food to use in the calculation</h3>
-        <input name="highest" type="number" min="1" step="1" required
-            placeholder="Enter a number"
-            value="{{ highest or '' }}"><br><br>
-
-        <button type="submit">Submit</button>
-    </form>
-</body>
-</html>
-"""
-
-RESULT_PAGE = """
-<h2>Result</h2>
-<p>Start: {{ start }}</p>
-<p>target: {{ target }}</p>
-
-<h3>Materials required: {{ total }}</h3>
-<ul>
-    {% for item in materials %}
-        <li>{{ item.count }} {{ item.name }}</li>
-    {% endfor %}
-</ul>
-
-<br><a href="/">Go back</a>
-"""
-
-
 # ---- Homepage ----
 @app.route("/")
 def home():
-    return render_template_string(
-        HTML_PAGE,
+    return render_template(
+        "mainPage.html",
         start=[],
         target=[],
         highest=""
@@ -190,8 +112,8 @@ def run_form():
         validate(raw_start, raw_target)
         
     except ValueError as e:
-        return render_template_string(
-            HTML_PAGE,
+        return render_template(
+            "mainPage.html",
             error=str(e),
             start=raw_start,
             target=raw_target,
@@ -200,15 +122,11 @@ def run_form():
 
     result = process_inputs(raw_start, raw_target, raw_highest)
 
-    return render_template_string(
-        RESULT_PAGE,
+    return render_template(
+        "resultsPage.html",
         start = result["start"],
         target = result["target"],
         total = result["total"],
         materials = result["materials"],
         material_list = result["material_names"]
     )
-
-# ---- Local run ----
-if __name__ == "__main__":
-    app.run(debug=True)
