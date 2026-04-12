@@ -3,21 +3,11 @@ import csv
 
 app = Flask(__name__)
 
-# this essentially tells the code where to put each of the different material bonuses. could've hardcoded it into the csv or filled the blank spaces with 0s in code but like, idfk, if it works it works.
-mask = [
-    [0,0,0,1,0,1,0,0],
-    [1,0,0,1,0,0,0,1],
-    [1,1,0,0,0,1,0,0],
-    [0,0,1,0,0,0,1,0],
-    [0,1,0,0,1,0,1,0],
-    [1,0,1,0,0,0,0,0],
-    [0,0,1,0,1,0,0,1],
-    [0,1,0,1,0,0,0,0]
-]
-
-# ---- Your logic ----
+# ---- the actual fuckin logic for reading the material data and doing a brute force algorithm ----
 def process_inputs(start, target, highest):
-    data = []
+    materials = []
+    material_names = []
+
     with open('materials.csv', newline='') as csvfile:
         csvr = list(csv.reader(csvfile))
         index = None
@@ -32,28 +22,17 @@ def process_inputs(start, target, highest):
 
         if index is not None:
             for row in csvr[index + 1 : index + 1 + 8]:
+                material_names.append(row[0])
+                print(material_names)
+                
                 numeric_row = []
-                for cell in row:
+                for cell in row[1:]:
                     try:
                         numeric_row.append(int(cell))
                     except ValueError:
-                        continue
+                        numeric_row.append(0)
                 if numeric_row:
-                    data.append(numeric_row)
-
-    # map the materials from whichever level resource you're using to the right places for the brute force algorithm
-    materials = []
-    for mask_row, data_row in zip(mask, data):
-        result = []
-        val_index = 0
-        for m in mask_row:
-            if m == 1:
-                result.append(data_row[val_index])
-                val_index += 1
-            else:
-                result.append(0)
-        materials.append(result)
-
+                    materials.append(numeric_row)
     
     best_solution = None
     best_count = float('inf')
@@ -90,9 +69,8 @@ def process_inputs(start, target, highest):
 
     backtrack(start[:], [0]*len(materials)) # hopefully this remains 8. if it is not 8, then gods help you.
 
-    material_names = ["ingot", "gem", "plank", "paper", "string", "grains", "oil", "meat"]
     materials_required = [
-        {"name": name, "count": count}
+        {"name": name, "count": int(count)}
         for name, count in zip(material_names, best_solution)
         if count > 0
     ]
@@ -101,6 +79,7 @@ def process_inputs(start, target, highest):
         "start": start,
         "target": target,
         "materials": materials_required,
+        "material_names": material_names,
         "total": best_count
     }
 
@@ -109,12 +88,9 @@ def validate(start, target):
         raise ValueError("Stat lists must be the same length")
 
     for i, (a, b) in enumerate(zip(start, target)):
-        print(a)
-        print(b)
         if b < a:
             raise ValueError("target stats must not be lower than current limits")
 
-# ---- HTML page ----
 HTML_PAGE = """
 <!DOCTYPE html>
 <html>
@@ -229,25 +205,9 @@ def run_form():
         start = result["start"],
         target = result["target"],
         total = result["total"],
-        materials = result["materials"]
+        materials = result["materials"],
+        material_list = result["material_names"]
     )
-#    <p>Highest: {result['highest']}</p>
-
-# ---- JSON API ----
-@app.route("/run", methods=["POST"])
-def run_api():
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "No JSON received"}), 400
-
-    start = data.get("start", [])
-    target = data.get("target", [])
-
-    result = process_inputs(start, raw_target)
-
-    return jsonify(result)
-
 
 # ---- Local run ----
 if __name__ == "__main__":
