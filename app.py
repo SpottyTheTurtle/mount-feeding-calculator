@@ -3,7 +3,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def run_script():
-    return 'Hello, World!'
+    #return 'Hello, World!'
 
     data = request.get_json()
 
